@@ -1,6 +1,7 @@
+// app/api/mentor/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { groq } from "@ai-sdk/groq";
-import { generateText } from "ai";
+import { generateText, type ModelMessage } from "ai";
 
 type MentorMode =
   | "communication_coach"
@@ -8,9 +9,14 @@ type MentorMode =
   | "workflow_helper"
   | "safe_qa";
 
+interface ClientMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 interface MentorRequestBody {
   mode: MentorMode;
-  userInput: string;
+  messages: ClientMessage[];
 }
 
 export async function POST(req: NextRequest) {
@@ -27,11 +33,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as MentorRequestBody;
-    const { mode, userInput } = body;
+    const { mode, messages } = body;
 
-    if (!mode || !userInput) {
+    if (!mode || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
-        { error: "Missing 'mode' or 'userInput' in request body" },
+        { error: "Missing or invalid 'mode' or 'messages' in request body" },
         { status: 400 }
       );
     }
@@ -50,9 +56,8 @@ If you are unsure what they want, ask 1–2 clarifying questions first.
 Keep your tone friendly and professional, and use bullet points when helpful.
     `.trim();
 
-    // 2️⃣ Mode-specific instructions + how to interpret userInput
+    // 2️⃣ Mode-specific instructions
     let modeInstructions = "";
-    let userPrompt = "";
 
     switch (mode) {
       case "communication_coach":
@@ -68,12 +73,6 @@ Your tasks:
 
 If the user sounds stressed or overwhelmed, acknowledge that first,
 then help them phrase their message or structure their note.
-        `.trim();
-
-        userPrompt = `
-Here is what I want to say or the draft I'm working on:
-
-"""${userInput}"""
         `.trim();
         break;
 
@@ -92,12 +91,6 @@ First, read their message carefully.
 
 Stay curious and supportive, not hostile.
         `.trim();
-
-        userPrompt = `
-Here is my current thinking or thesis (it might be incomplete or rough):
-
-"""${userInput}"""
-        `.trim();
         break;
 
       case "workflow_helper":
@@ -113,9 +106,6 @@ Your tasks:
 
 Always refer back explicitly to the tasks or feelings they mention.
         `.trim();
-
-        // For workflow-helper, just pass raw user text
-        userPrompt = userInput;
         break;
 
       case "safe_qa":
@@ -130,27 +120,24 @@ Your tasks:
 
 Always respond directly to what the user asked or expressed, in context.
         `.trim();
-
-        // For safe Q&A, also just pass the raw text
-        userPrompt = userInput;
         break;
     }
 
-    // 3️⃣ Use chat-style messages so the model clearly sees system vs user
-    const messages = [
+    // 3️⃣ Build AI SDK-style messages: system + conversation history
+    const aiMessages: ModelMessage[] = [
       {
-        role: "system" as const,
+        role: "system",
         content: `${basePersona}\n\n${modeInstructions}`,
       },
-      {
-        role: "user" as const,
-        content: userPrompt,
-      },
+      ...messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
     ];
 
     const { text } = await generateText({
-      model: groq("llama-3.3-70b-versatile"), // or "llama-3.1-8b-instant" if you want smaller/faster
-      prompt: messages,
+      model: groq("llama-3.3-70b-versatile"), // or "llama-3.1-8b-instant"
+      prompt: aiMessages,
       temperature: 0.4,
       maxOutputTokens: 800,
     });
