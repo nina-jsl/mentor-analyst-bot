@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import type { KeyboardEvent } from "react";
 
 type MentorMode =
   | "communication_coach"
@@ -31,7 +32,8 @@ const MODE_CONFIG: Record<MentorMode, ModeConfig> = {
   communication_coach: {
     label: "Communication Coach",
     description: "Helps you polish emails, notes, and memos.",
-    placeholder: "Paste your draft email / memo, or describe what you want to say...",
+    placeholder:
+      "Paste your draft email / memo, or describe what you want to say...",
     colors: {
       tabActive: "bg-blue-600 text-white border-blue-600",
       tabInactive: "bg-white text-gray-800 border-gray-300",
@@ -53,7 +55,8 @@ const MODE_CONFIG: Record<MentorMode, ModeConfig> = {
   workflow_helper: {
     label: "Workflow Helper",
     description: "Prioritizes tasks and helps you plan your day or week.",
-    placeholder: "List your tasks, deadlines, and what you're stressed about...",
+    placeholder:
+      "List your tasks, deadlines, and what you're stressed about...",
     colors: {
       tabActive: "bg-amber-500 text-white border-amber-500",
       tabInactive: "bg-white text-gray-800 border-gray-300",
@@ -64,7 +67,8 @@ const MODE_CONFIG: Record<MentorMode, ModeConfig> = {
   safe_qa: {
     label: "Safe Q&A",
     description: "Talk about culture, expectations, and soft skills at work.",
-    placeholder: "Ask anything about working in asset management or being a junior analyst...",
+    placeholder:
+      "Ask anything about working in asset management or being a junior analyst...",
     colors: {
       tabActive: "bg-purple-600 text-white border-purple-600",
       tabInactive: "bg-white text-gray-800 border-gray-300",
@@ -85,12 +89,14 @@ export default function HomePage() {
   const [mode, setMode] = useState<MentorMode>("communication_coach");
 
   // per-mode histories
-  const [histories, setHistories] = useState<Record<MentorMode, ChatMessage[]>>({
-    communication_coach: [],
-    pm_simulator: [],
-    workflow_helper: [],
-    safe_qa: [],
-  });
+  const [histories, setHistories] = useState<Record<MentorMode, ChatMessage[]>>(
+    {
+      communication_coach: [],
+      pm_simulator: [],
+      workflow_helper: [],
+      safe_qa: [],
+    }
+  );
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -143,7 +149,7 @@ export default function HomePage() {
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!loading) {
@@ -161,7 +167,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col items-center p-6 gap-4 bg-gray-50">
       <h1 className="text-2xl font-semibold text-center">
-        Junior Analyst Mentor 
+        Junior Analyst Mentor
       </h1>
 
       {/* Mode tabs */}
@@ -186,7 +192,8 @@ export default function HomePage() {
       {/* Mode description */}
       <p className="text-sm text-gray-600 mb-2 text-center max-w-xl">
         {currentConfig.description}
-        {currentMessages.length > 0 && " You are continuing your previous chat in this mode."}
+        {currentMessages.length > 0 &&
+          " You are continuing your previous chat in this mode."}
       </p>
 
       {/* Conversation window */}
@@ -200,9 +207,7 @@ export default function HomePage() {
         {currentMessages.map((m, idx) => (
           <div
             key={idx}
-            className={`mb-3 ${
-              m.role === "user" ? "text-right" : "text-left"
-            }`}
+            className={`mb-3 ${m.role === "user" ? "text-right" : "text-left"}`}
           >
             <div
               className={`inline-block px-3 py-2 rounded-lg whitespace-pre-wrap text-sm ${
@@ -234,9 +239,7 @@ export default function HomePage() {
         {loading ? "Thinking..." : "Ask Mentor"}
       </button>
 
-      {errorMsg && (
-        <p className="text-red-600 mt-2 text-sm">{errorMsg}</p>
-      )}
+      {errorMsg && <p className="text-red-600 mt-2 text-sm">{errorMsg}</p>}
     </main>
   );
 }
